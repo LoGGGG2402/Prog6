@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Http\Controllers\FileController;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\App;
 
 class Assignment extends Model
 {
@@ -52,5 +54,14 @@ class Assignment extends Model
     public function getStudentSubmission($studentId)
     {
         return $this->submissions()->where('student_id', $studentId)->first();
+    }
+
+    /**
+     * Get secure download URL for this assignment
+     */
+    public function getDownloadUrl()
+    {
+        $fileController = App::make(FileController::class);
+        return $fileController->generateDownloadUrl($this->id, 'assignment');
     }
 }

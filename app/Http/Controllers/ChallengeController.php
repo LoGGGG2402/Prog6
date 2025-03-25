@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Challenge;
 use App\Models\User;
+use App\Rules\SecureFile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Config;
 
 class ChallengeController extends Controller
 {
@@ -58,17 +60,25 @@ class ChallengeController extends Controller
         
         $validated = $request->validate([
             'hint' => 'required|string',
-            'result' => 'required|string',
-            'challenge_file' => 'required|file|mimes:txt',
+            'result' => 'required|string|max:255',
+            'challenge_file' => [
+                'required',
+                'file',
+                'max:1024', // 1MB max
+                new SecureFile(['text']),
+            ],
         ]);
         
-        $path = $request->file('challenge_file')->store('challenges', 'public');
+        $path = $request->file('challenge_file')->store(
+            Config::get('filesystems.uploads.challenges'),
+            'private'
+        );
         
         Challenge::create([
             'teacher_id' => Auth::id(),
             'hint' => $validated['hint'],
             'result' => $validated['result'],
-            'file_path' => 'storage/' . $path,
+            'file_path' => $path,
         ]);
         
         return redirect()->route('challenges.index')->with('message', 'Challenge created successfully!');
@@ -101,54 +111,5 @@ class ChallengeController extends Controller
         }
         
         return back()->with('error', 'Incorrect answer. Please try again.');
-    }
-
-    /**
-     * Serve the challenge file.
-     */
-    public function download(Challenge $challenge)
-    {
-        // For students, check if they've solved the challenge
-        if (Auth::user()->isStudent()) {
-            $answeredChallenges = session('answered_challenges', []);
-            if (!in_array($challenge->id, $answeredChallenges)) {
-                return back()->with('error', 'You must solve the challenge first');
-            }
-        }
-        
-        // For teachers, allow direct access
-        if (!Auth::user()->isTeacher() && !in_array($challenge->id, session('answered_challenges', []))) {
-            return back()->with('error', 'Access denied');
-        }
-        
-        // Check if the file exists
-        if (!file_exists(public_path($challenge->file_path))) {
-            return back()->with('error', 'File not found');
-        }
-        
-        // Get the filename from the path
-        $filename = basename($challenge->file_path);
-        
-        return response()->download(public_path($challenge->file_path), $filename);
-    }
-
-    /**
-     * Get the content of a challenge for display
-     */
-    public function getContent(Challenge $challenge)
-    {
-        // For students, check if they've solved the challenge
-        if (Auth::user()->isStudent()) {
-            $answeredChallenges = session('answered_challenges', []);
-            if (!in_array($challenge->id, $answeredChallenges)) {
-                return response()->json(['error' => 'Access denied'], 403);
-            }
-        }
-        
-        $content = file_get_contents(public_path($challenge->file_path));
-        
-        return response()->json([
-            'content' => $content,
-        ]);
     }
 }

@@ -35,7 +35,7 @@
                                     <td>{{ $submission->filename }}</td>
                                     <td>{{ $submission->created_at->format('M j, Y g:i A') }}</td>
                                     <td>
-                                        <a href="{{ route('submissions.download', $submission) }}" class="btn btn-sm btn-info me-1">
+                                        <a href="{{ $submission->getDownloadUrl() }}" class="btn btn-sm btn-info me-1">
                                             <i class="fas fa-download"></i> Download
                                         </a>
                                         <a href="{{ route('submissions.create', $submission->assignment) }}" class="btn btn-sm btn-primary">

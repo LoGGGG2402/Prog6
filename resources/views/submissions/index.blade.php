@@ -77,7 +77,7 @@
                                     <td>{{ $submission->filename }}</td>
                                     <td>{{ $submission->created_at->format('M j, Y g:i A') }}</td>
                                     <td class="d-flex">
-                                        <a href="{{ route('submissions.download', $submission) }}" class="btn btn-sm btn-info me-2">
+                                        <a href="{{ $submission->getDownloadUrl() }}" class="btn btn-sm btn-info me-2">
                                             <i class="fas fa-download"></i> Download
                                         </a>
                                         <a href="{{ route('profile.show', $submission->student) }}" class="btn btn-sm btn-primary">

@@ -6,6 +6,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Config;
 
 class AuthController extends Controller
 {
@@ -106,9 +108,12 @@ class AuthController extends Controller
             $user->password = bcrypt($validated['password']);
         }
 
-        // Handle avatar upload
+        // Handle avatar upload - keep this public since it needs to be directly accessible
         if ($request->hasFile('avatar')) {
-            $path = $request->file('avatar')->store('avatars', 'public');
+            $path = $request->file('avatar')->store(
+                Config::get('filesystems.uploads.avatars'),
+                'public'
+            );
             $user->avatar = '/storage/' . $path;
         } elseif ($request->filled('avatar_url')) {
             $user->avatar = $request->input('avatar_url');

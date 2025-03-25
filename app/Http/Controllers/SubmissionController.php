@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Assignment;
 use App\Models\Submission;
 use App\Models\User;
+use App\Rules\SecureFile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Config;
 
 class SubmissionController extends Controller
 {
@@ -89,10 +91,14 @@ class SubmissionController extends Controller
         }
         
         $validated = $request->validate([
-            'submission_file' => 'required|file|mimes:pdf,doc,docx,txt,zip',
+            'submission_file' => [
+                'required',
+                'file',
+                'max:10240', // 10MB max
+                new SecureFile(['document', 'archive']),
+            ],
         ]);
         
-        $path = $request->file('submission_file')->store('submissions', 'public');
         $fileName = $request->file('submission_file')->getClientOriginalName();
         
         // Check if the student has already submitted this assignment
@@ -103,22 +109,32 @@ class SubmissionController extends Controller
         if ($submission) {
             // Update existing submission
             // Delete old file if it exists
-            if (file_exists(public_path($submission->file_path))) {
-                unlink(public_path($submission->file_path));
+            if (Storage::disk('private')->exists($submission->file_path)) {
+                Storage::disk('private')->delete($submission->file_path);
             }
             
+            $path = $request->file('submission_file')->store(
+                Config::get('filesystems.uploads.submissions'),
+                'private'
+            );
+            
             $submission->update([
-                'file_path' => 'storage/' . $path,
+                'file_path' => $path,
                 'filename' => $fileName,
             ]);
             
             $message = 'Submission updated successfully!';
         } else {
             // Create new submission
+            $path = $request->file('submission_file')->store(
+                Config::get('filesystems.uploads.submissions'),
+                'private'
+            );
+            
             Submission::create([
                 'assignment_id' => $assignment->id,
                 'student_id' => Auth::id(),
-                'file_path' => 'storage/' . $path,
+                'file_path' => $path,
                 'filename' => $fileName,
             ]);
             
@@ -129,20 +145,6 @@ class SubmissionController extends Controller
     }
 
     /**
-     * Serve the submission file.
+     * Download has been removed - now handled by FileController
      */
-    public function download(Submission $submission)
-    {
-        // Security check - only allow the owner or teachers to download
-        if (Auth::id() !== $submission->student_id && !Auth::user()->isTeacher()) {
-            return back()->with('error', 'You do not have permission to access this file');
-        }
-        
-        // Check if the file exists
-        if (!file_exists(public_path($submission->file_path))) {
-            return back()->with('error', 'File not found');
-        }
-        
-        return response()->download(public_path($submission->file_path), $submission->filename);
-    }
 }

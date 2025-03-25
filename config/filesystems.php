@@ -56,6 +56,12 @@ return [
             'throw' => false,
         ],
 
+        'private' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private'),
+            'throw' => false,
+        ],
+
     ],
 
     /*
@@ -85,9 +91,9 @@ return [
 
     'uploads' => [
         'avatars' => 'public/avatars',
-        'assignments' => 'public/assignments',
-        'submissions' => 'public/submissions',
-        'challenges' => 'public/challenges',
+        'assignments' => 'private/assignments',
+        'submissions' => 'private/submissions',
+        'challenges' => 'private/challenges',
     ],
 
 ];

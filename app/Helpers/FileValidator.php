@@ -1,0 +1,132 @@
+<?php
+
+namespace App\Helpers;
+
+use Illuminate\Http\UploadedFile;
+use Symfony\Component\HttpFoundation\File\Exception\FileException;
+
+class FileValidator
+{
+    /**
+     * Allowed MIME types by category
+     */
+    protected static $allowedMimeTypes = [
+        'document' => [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'text/plain',
+        ],
+        'archive' => [
+            'application/zip',
+            'application/x-zip-compressed',
+        ],
+        'image' => [
+            'image/jpeg',
+            'image/png',
+            'image/gif',
+        ],
+        'text' => [
+            'text/plain',
+        ],
+    ];
+
+    /**
+     * File extension to MIME type mapping for extra validation
+     */
+    protected static $extensionMimeMap = [
+        'pdf' => 'application/pdf',
+        'doc' => 'application/msword',
+        'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'txt' => 'text/plain',
+        'zip' => ['application/zip', 'application/x-zip-compressed'],
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'gif' => 'image/gif',
+    ];
+
+    /**
+     * Validate a file based on allowed types
+     * 
+     * @param UploadedFile $file The uploaded file
+     * @param array $allowedTypes Array of allowed file types (document, archive, image, text)
+     * @return bool True if valid, throws exception if invalid
+     * @throws FileException If validation fails
+     */
+    public static function validate(UploadedFile $file, array $allowedTypes): bool
+    {
+        // First check extension
+        $extension = strtolower($file->getClientOriginalExtension());
+        $validExtension = false;
+
+        foreach ($allowedTypes as $type) {
+            if (!isset(self::$allowedMimeTypes[$type])) {
+                continue;
+            }
+
+            foreach (self::$allowedMimeTypes[$type] as $mimeType) {
+                $expectedExts = array_keys(array_filter(self::$extensionMimeMap, function($mt) use ($mimeType) {
+                    return is_array($mt) ? in_array($mimeType, $mt) : $mt === $mimeType;
+                }));
+
+                if (in_array($extension, $expectedExts)) {
+                    $validExtension = true;
+                    break 2;
+                }
+            }
+        }
+
+        if (!$validExtension) {
+            throw new FileException("Invalid file extension: $extension");
+        }
+
+        // Then check MIME type
+        $detectedMimeType = $file->getMimeType();
+        $validMimeType = false;
+
+        // Gather all allowed mime types for the specified categories
+        $allowedMimes = [];
+        foreach ($allowedTypes as $type) {
+            if (isset(self::$allowedMimeTypes[$type])) {
+                $allowedMimes = array_merge($allowedMimes, self::$allowedMimeTypes[$type]);
+            }
+        }
+
+        if (!in_array($detectedMimeType, $allowedMimes)) {
+            throw new FileException("Invalid file type detected: $detectedMimeType");
+        }
+
+        // For extra safety, check if extension matches mime type
+        if (isset(self::$extensionMimeMap[$extension])) {
+            $expectedMime = self::$extensionMimeMap[$extension];
+            if (is_array($expectedMime)) {
+                if (!in_array($detectedMimeType, $expectedMime)) {
+                    throw new FileException("File extension doesn't match its content type");
+                }
+            } else if ($detectedMimeType !== $expectedMime) {
+                throw new FileException("File extension doesn't match its content type");
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Get validation rule for file types
+     * 
+     * @param array $types Array of allowed file types (document, archive, image, text)
+     * @return string Validation rule for mime types
+     */
+    public static function getValidationRule(array $types): string
+    {
+        $mimeTypes = [];
+        foreach ($types as $type) {
+            if (isset(self::$allowedMimeTypes[$type])) {
+                $mimeTypes = array_merge($mimeTypes, self::$allowedMimeTypes[$type]);
+            }
+        }
+        
+        return 'mimes:' . implode(',', array_keys(array_intersect(self::$extensionMimeMap, $mimeTypes)));
+    }
+}

@@ -57,7 +57,7 @@
                                     <td>{{ $assignment->description }}</td>
                                     <td>{{ $assignment->teacher->fullname }}</td>
                                     <td>
-                                        <a href="{{ route('assignments.download', $assignment) }}" class="btn btn-sm btn-info">
+                                        <a href="{{ $assignment->getDownloadUrl() }}" class="btn btn-sm btn-info">
                                             <i class="fas fa-download"></i> {{ $assignment->filename }}
                                         </a>
                                     </td>

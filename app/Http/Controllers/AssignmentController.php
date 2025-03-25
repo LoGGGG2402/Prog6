@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Assignment;
 use App\Models\User;
+use App\Rules\SecureFile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Config;
 
 class AssignmentController extends Controller
 {
@@ -73,17 +75,26 @@ class AssignmentController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'assignment_file' => 'required|file|mimes:pdf,doc,docx,txt,zip',
+            'assignment_file' => [
+                'required',
+                'file',
+                'max:10240', // 10MB max
+                new SecureFile(['document', 'archive']),
+            ],
         ]);
         
-        $path = $request->file('assignment_file')->store('assignments', 'public');
+        $path = $request->file('assignment_file')->store(
+            Config::get('filesystems.uploads.assignments'),
+            'private'
+        );
+        
         $fileName = $request->file('assignment_file')->getClientOriginalName();
         
         Assignment::create([
             'teacher_id' => Auth::id(),
             'title' => $validated['title'],
             'description' => $validated['description'],
-            'file_path' => 'storage/' . $path,
+            'file_path' => $path,
             'filename' => $fileName,
         ]);
         
@@ -91,15 +102,6 @@ class AssignmentController extends Controller
     }
 
     /**
-     * Serve the assignment file.
+     * Download has been removed - now handled by FileController
      */
-    public function download(Assignment $assignment)
-    {
-        // Security check - ensure the file exists
-        if (!file_exists(public_path($assignment->file_path))) {
-            return back()->with('error', 'File not found');
-        }
-        
-        return response()->download(public_path($assignment->file_path), $assignment->filename);
-    }
 }

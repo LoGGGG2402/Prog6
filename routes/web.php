@@ -3,6 +3,7 @@
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChallengeController;
+use App\Http\Controllers\FileController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\UserController;
@@ -59,6 +60,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/challenges/{challenge}/check', [ChallengeController::class, 'checkAnswer'])->name('challenges.check');
     Route::get('/challenges/{challenge}/download', [ChallengeController::class, 'download'])->name('challenges.download');
     Route::get('/challenges/{challenge}/content', [ChallengeController::class, 'getContent'])->name('challenges.content');
+    
+    // Secure file downloads và Challenge content - update để sử dụng đúng controller
+    Route::get('/file/{type}/{id}', [FileController::class, 'download'])->name('file.download');
+    Route::get('/challenge/{id}/content', [FileController::class, 'getChallengeContent'])->name('file.challengeContent');
     
     // Student management (teachers only)
     Route::get('/students', [UserController::class, 'students'])->name('students.index');

@@ -81,14 +81,11 @@
                                                 </div>
                                                 
                                                 <div class="mb-3">
-                                                    <a href="{{ route('challenges.download', $challenge) }}" class="btn btn-info w-100 mb-2">
+                                                    <a href="{{ $challenge->getDownloadUrl() }}" class="btn btn-info w-100 mb-2">
                                                         <i class="fas fa-download me-1"></i> Download Challenge
                                                     </a>
                                                     
-                                                    <button type="button" class="btn btn-primary w-100" 
-                                                            onclick="viewChallengeContent('{{ route('challenges.content', $challenge) }}')">
-                                                        <i class="fas fa-eye me-1"></i> View Content
-                                                    </button>
+                                                    <!-- View Content button removed -->
                                                 </div>
                                             @else
                                                 <div class="card">
@@ -117,14 +114,11 @@
                                             </div>
                                             
                                             <div class="mb-3">
-                                                <a href="{{ route('challenges.download', $challenge) }}" class="btn btn-info w-100 mb-2">
+                                                <a href="{{ $challenge->getDownloadUrl() }}" class="btn btn-info w-100 mb-2">
                                                     <i class="fas fa-download me-1"></i> Download Challenge
                                                 </a>
                                                 
-                                                <button type="button" class="btn btn-primary w-100" 
-                                                        onclick="viewChallengeContent('{{ route('challenges.content', $challenge) }}')">
-                                                    <i class="fas fa-eye me-1"></i> View Content
-                                                </button>
+                                                <!-- View Content button removed -->
                                             </div>
                                         @endif
                                     </div>
@@ -145,43 +139,30 @@
     </div>
 </div>
 
-<!-- Challenge Content Modal -->
-<div class="modal fade" id="challengeContentModal" tabindex="-1" aria-labelledby="challengeContentModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="challengeContentModalLabel">Challenge Content</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <pre id="challengeContentDisplay" class="bg-light p-3" style="max-height: 400px; overflow-y: auto;"></pre>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Challenge Content Modal removed -->
 @endsection
 
 @push('scripts')
 <script>
-    function viewChallengeContent(url) {
-        fetch(url)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Access denied');
-                }
-                return response.json();
-            })
-            .then(data => {
-                document.getElementById('challengeContentDisplay').textContent = data.content;
-                var modal = new bootstrap.Modal(document.getElementById('challengeContentModal'));
-                modal.show();
-            })
-            .catch(error => {
-                alert('Error: ' + error.message);
-            });
-    }
+    // viewChallengeContent function removed
+    // fallbackToDirectLink function removed
+
+    // Add diagnostics code
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check CSRF token availability
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (!csrfToken) {
+            console.error('CSRF token meta tag is missing - this might cause AJAX issues');
+        } else {
+            console.log('CSRF token is available');
+        }
+        
+        // Check if bootstrap modal is available
+        if (typeof bootstrap === 'undefined' || typeof bootstrap.Modal === 'undefined') {
+            console.error('Bootstrap modal is not available - this might cause UI issues');
+        } else {
+            console.log('Bootstrap modal is available');
+        }
+    });
 </script>
 @endpush
