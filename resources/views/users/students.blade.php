@@ -2,8 +2,16 @@
 
 @section('content')
 <div class="row mb-3">
-    <div class="col-md-12">
-        <h2>Manage Students</h2>
+    <div class="col-md-12 d-flex justify-content-between align-items-center">
+        <h2>Manage Users</h2>
+        <div>
+            <a href="{{ route('users.create-teacher') }}" class="btn btn-primary me-2">
+                <i class="fas fa-user-plus"></i> Add Teacher
+            </a>
+            <a href="{{ route('users.create-student') }}" class="btn btn-success">
+                <i class="fas fa-user-plus"></i> Add Student
+            </a>
+        </div>
     </div>
 </div>
 
@@ -33,7 +41,9 @@
                                     @if (!empty($student->avatar))
                                         <img src="{{ $student->avatar }}" alt="Avatar" class="avatar-sm">
                                     @else
-                                        <img src="{{ asset('img/default-avatar.png') }}" alt="Default Avatar" class="avatar-sm">
+                                        <div class="avatar-placeholder">
+                                            {{ substr($student->fullname, 0, 1) }}
+                                        </div>
                                     @endif
                                 </td>
                                 <td>{{ $student->fullname }}</td>
@@ -41,8 +51,8 @@
                                 <td>{{ $student->email }}</td>
                                 <td>{{ $student->phone }}</td>
                                 <td>
-                                    <a href="{{ route('profile.show', $student->id) }}" class="btn btn-sm btn-info">
-                                        <i class="fas fa-user"></i> View Profile
+                                    <a href="{{ route('profile.show', $student) }}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-user"></i>
                                     </a>
                                 </td>
                             </tr>

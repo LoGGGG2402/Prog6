@@ -7,6 +7,7 @@ use App\Http\Controllers\FileController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -67,4 +68,10 @@ Route::middleware('auth')->group(function () {
     
     // Student management (teachers only)
     Route::get('/students', [UserController::class, 'students'])->name('students.index');
+    
+    // User management routes (teachers only)
+    Route::get('/users/create-teacher', [UserManagementController::class, 'createTeacher'])->name('users.create-teacher');
+    Route::post('/users/create-teacher', [UserManagementController::class, 'storeTeacher'])->name('users.store-teacher');
+    Route::get('/users/create-student', [UserManagementController::class, 'createStudent'])->name('users.create-student');
+    Route::post('/users/create-student', [UserManagementController::class, 'storeStudent'])->name('users.store-student');
 });

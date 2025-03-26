@@ -72,8 +72,8 @@
                 @if ($messages->count() > 0)
                     <div class="message-container">
                         @foreach ($messages as $message)
-                            <div class="message {{ $message->sender_id == Auth::id() ? 'message-sender' : 'message-receiver' }}">
-                                <div class="d-flex justify-content-between">
+                            <div class="message {{ $message->sender_id == Auth::id() ? 'message-sender' : 'message-receiver' }}" id="message-{{ $message->id }}">
+                                <div class="d-flex justify-content-between align-items-center">
                                     <strong>
                                         @if ($message->sender_id == Auth::id())
                                             You
@@ -82,54 +82,49 @@
                                         @endif
                                     </strong>
                                     
-                                    @if ($message->sender_id == Auth::id())
-                                    <div>
-                                        <button type="button" class="btn btn-sm btn-link" data-bs-toggle="modal" data-bs-target="#editMessageModal{{ $message->id }}">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        
-                                        <form action="{{ route('messages.destroy', $message) }}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this message?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-link text-danger">
-                                                <i class="fas fa-trash"></i>
+                                    <div class="message-actions">
+                                        @if ($message->sender_id == Auth::id())
+                                            <button type="button" class="btn btn-sm btn-link text-secondary edit-message-btn" 
+                                                    data-message-id="{{ $message->id }}">
+                                                <i class="fas fa-edit"></i>
                                             </button>
-                                        </form>
+                                            
+                                            <form action="{{ route('messages.destroy', $message) }}" method="post" class="d-inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-link text-danger" onclick="return confirm('Are you sure you want to delete this message?');">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        @else
+                                            <a href="{{ route('profile.show', $message->sender_id) }}" class="btn btn-sm btn-link text-primary" 
+                                               title="Visit {{ $message->sender->fullname }}'s Profile">
+                                                <i class="fas fa-reply"></i>
+                                            </a>
+                                        @endif
                                     </div>
-                                    
-                                    <!-- Edit Message Modal -->
-                                    <div class="modal fade" id="editMessageModal{{ $message->id }}" tabindex="-1" aria-labelledby="editMessageModalLabel{{ $message->id }}" aria-hidden="true">
-                                        <div class="modal-dialog">
-                                            <div class="modal-content">
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title" id="editMessageModalLabel{{ $message->id }}">Edit Message</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                </div>
-                                                <form action="{{ route('messages.update', $message) }}" method="post">
-                                                    @csrf
-                                                    @method('PUT')
-                                                    <div class="modal-body">
-                                                        <div class="mb-3">
-                                                            <label for="editMessage{{ $message->id }}" class="form-label">Message</label>
-                                                            <textarea class="form-control" id="editMessage{{ $message->id }}" name="message" rows="3" required>{{ $message->message }}</textarea>
-                                                        </div>
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                        <button type="submit" class="btn btn-primary">Save Changes</button>
-                                                    </div>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    @endif
                                 </div>
                                 
-                                <div class="message-content mt-1">
+                                <div class="message-content mt-2" id="content-{{ $message->id }}">
                                     {{ $message->message }}
                                 </div>
                                 
-                                <div class="message-meta">
+                                <!-- Inline edit form (hidden by default) -->
+                                <div class="message-edit-form mt-2" id="edit-form-{{ $message->id }}" style="display: none;">
+                                    <form action="{{ route('messages.update', $message) }}" method="post" class="inline-edit-form">
+                                        @csrf
+                                        @method('PUT')
+                                        <div class="mb-2">
+                                            <textarea class="form-control" name="message" rows="3" required>{{ $message->message }}</textarea>
+                                        </div>
+                                        <div class="d-flex justify-content-end">
+                                            <button type="button" class="btn btn-sm btn-secondary me-2 cancel-edit" data-message-id="{{ $message->id }}">Cancel</button>
+                                            <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                
+                                <div class="message-meta mt-1">
                                     <small class="text-muted">
                                         {{ $message->created_at->format('M j, Y g:i A') }}
                                         @if ($message->receiver_id == Auth::id() && !$message->is_read)
@@ -152,7 +147,7 @@
                 
                 @if ($user->id != Auth::id())
                 <div class="mt-3">
-                    <form action="{{ route('messages.store', $user) }}" method="post">
+                    <form action="{{ route('messages.store', $user) }}" method="post" id="messageForm">
                         @csrf
                         <div class="mb-3">
                             <label for="message" class="form-label">Send a message to {{ $user->fullname }}</label>
@@ -260,3 +255,35 @@
 </div>
 @endif
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get all edit message buttons
+        const editButtons = document.querySelectorAll('.edit-message-btn');
+        const cancelButtons = document.querySelectorAll('.cancel-edit');
+        
+        // Add click event to all edit buttons
+        editButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const messageId = this.getAttribute('data-message-id');
+                
+                // Hide content and show edit form
+                document.getElementById(`content-${messageId}`).style.display = 'none';
+                document.getElementById(`edit-form-${messageId}`).style.display = 'block';
+            });
+        });
+        
+        // Add click event to all cancel buttons
+        cancelButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const messageId = this.getAttribute('data-message-id');
+                
+                // Show content and hide edit form
+                document.getElementById(`content-${messageId}`).style.display = 'block';
+                document.getElementById(`edit-form-${messageId}`).style.display = 'none';
+            });
+        });
+    });
+</script>
+@endpush
