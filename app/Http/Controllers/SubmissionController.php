@@ -6,6 +6,7 @@ use App\Models\Assignment;
 use App\Models\Submission;
 use App\Models\User;
 use App\Rules\SecureFile;
+use App\Helpers\FileValidator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -99,7 +100,9 @@ class SubmissionController extends Controller
             ],
         ]);
         
-        $fileName = $request->file('submission_file')->getClientOriginalName();
+        // Get original filename and sanitize it
+        $originalName = $request->file('submission_file')->getClientOriginalName();
+        $fileName = FileValidator::sanitizeFilename($originalName);
         
         // Check if the student has already submitted this assignment
         $submission = Submission::where('assignment_id', $assignment->id)
@@ -118,6 +121,11 @@ class SubmissionController extends Controller
                 'private'
             );
             
+            // Validate stored path to prevent directory traversal
+            if (!$path || strpos($path, '..') !== false) {
+                return redirect()->back()->with('error', 'Invalid file path detected.');
+            }
+            
             $submission->update([
                 'file_path' => $path,
                 'filename' => $fileName,
@@ -130,6 +138,11 @@ class SubmissionController extends Controller
                 Config::get('filesystems.uploads.submissions'),
                 'private'
             );
+            
+            // Validate stored path to prevent directory traversal
+            if (!$path || strpos($path, '..') !== false) {
+                return redirect()->back()->with('error', 'Invalid file path detected.');
+            }
             
             Submission::create([
                 'assignment_id' => $assignment->id,

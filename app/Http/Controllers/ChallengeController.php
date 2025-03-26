@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Challenge;
 use App\Models\User;
 use App\Rules\SecureFile;
+use App\Helpers\FileValidator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -69,15 +70,24 @@ class ChallengeController extends Controller
             ],
         ]);
         
+        // Sanitize inputs to prevent XSS
+        $hint = strip_tags($validated['hint']);
+        $result = strip_tags($validated['result']);
+        
         $path = $request->file('challenge_file')->store(
             Config::get('filesystems.uploads.challenges'),
             'private'
         );
         
+        // Validate stored path to prevent directory traversal
+        if (!$path || strpos($path, '..') !== false) {
+            return redirect()->back()->with('error', 'Invalid file path detected.');
+        }
+        
         Challenge::create([
             'teacher_id' => Auth::id(),
-            'hint' => $validated['hint'],
-            'result' => $validated['result'],
+            'hint' => $hint,
+            'result' => $result,
             'file_path' => $path,
         ]);
         
@@ -93,7 +103,11 @@ class ChallengeController extends Controller
             return redirect()->route('challenges.index');
         }
         
-        $answer = trim($request->input('answer'));
+        $request->validate([
+            'answer' => 'required|string|max:255'
+        ]);
+        
+        $answer = trim(strip_tags($request->input('answer')));
         
         if ($challenge->checkAnswer($answer)) {
             // Store in session that this challenge has been answered correctly

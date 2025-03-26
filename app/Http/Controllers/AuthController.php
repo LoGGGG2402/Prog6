@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Helpers\FileValidator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -73,34 +74,51 @@ class AuthController extends Controller
 
         // Validate the input
         $rules = [
-            'email' => 'required|email',
-            'phone' => 'required',
+            'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'phone' => 'required|string|max:20|regex:/^[0-9+\-\s()]+$/',
         ];
 
         // For teacher updating student information
         if (Auth::user()->isTeacher() && $user->isStudent()) {
             $rules['username'] = [
                 'required',
+                'string',
+                'max:255',
+                'regex:/^[a-zA-Z0-9_.-]+$/', // Alphanumeric, underscore, dot, hyphen only
                 Rule::unique('users')->ignore($user->id),
             ];
-            $rules['fullname'] = 'required';
+            $rules['fullname'] = 'required|string|max:255';
         }
 
         // Password change is optional
         if ($request->filled('password')) {
-            $rules['password'] = 'required|min:6|confirmed';
+            $rules['password'] = 'required|min:8|confirmed';
+        }
+        
+        // Avatar validation if provided
+        if ($request->hasFile('avatar')) {
+            $rules['avatar'] = [
+                'file',
+                'max:2048', // 2MB max
+                'mimes:jpeg,png,gif',
+            ];
+        } elseif ($request->filled('avatar_url')) {
+            $rules['avatar_url'] = [
+                'url',
+                'max:255',
+            ];
         }
 
         $validated = $request->validate($rules);
 
-        // Update basic user data
-        $user->email = $validated['email'];
-        $user->phone = $validated['phone'];
+        // Update basic user data (sanitized)
+        $user->email = filter_var($validated['email'], FILTER_SANITIZE_EMAIL);
+        $user->phone = strip_tags($validated['phone']);
 
         // Update username and fullname if teacher is updating student
         if (Auth::user()->isTeacher() && $user->isStudent()) {
-            $user->username = $validated['username'];
-            $user->fullname = $validated['fullname'];
+            $user->username = strip_tags($validated['username']);
+            $user->fullname = strip_tags($validated['fullname']);
         }
 
         // Update password if provided
@@ -110,13 +128,45 @@ class AuthController extends Controller
 
         // Handle avatar upload - keep this public since it needs to be directly accessible
         if ($request->hasFile('avatar')) {
+            // Delete old avatar if it exists and is not a URL
+            if ($user->avatar && !filter_var($user->avatar, FILTER_VALIDATE_URL) && strpos($user->avatar, '/storage/') === 0) {
+                $oldPath = str_replace('/storage/', '', $user->avatar);
+                if (Storage::disk('public')->exists($oldPath)) {
+                    Storage::disk('public')->delete($oldPath);
+                }
+            }
+            
+            // Sanitize filename
+            $originalName = $request->file('avatar')->getClientOriginalName();
+            $fileName = FileValidator::sanitizeFilename($originalName);
+            
             $path = $request->file('avatar')->store(
                 Config::get('filesystems.uploads.avatars'),
                 'public'
             );
+            
+            // Validate stored path
+            if (!$path || strpos($path, '..') !== false) {
+                return redirect()->back()->with('error', 'Invalid file path detected.');
+            }
+            
             $user->avatar = '/storage/' . $path;
         } elseif ($request->filled('avatar_url')) {
-            $user->avatar = $request->input('avatar_url');
+            // Validate and sanitize URL
+            $avatarUrl = $validated['avatar_url'];
+            if (filter_var($avatarUrl, FILTER_VALIDATE_URL)) {
+                // Only allow specific domains (example)
+                $allowedDomains = ['gravatar.com', 'secure.gravatar.com', 'avatars.githubusercontent.com'];
+                $urlParts = parse_url($avatarUrl);
+                
+                if (isset($urlParts['host']) && in_array($urlParts['host'], $allowedDomains)) {
+                    $user->avatar = $avatarUrl;
+                } else {
+                    return redirect()->back()->with('error', 'Avatar URL from this domain is not allowed');
+                }
+            } else {
+                return redirect()->back()->with('error', 'Invalid avatar URL');
+            }
         }
 
         $user->save();

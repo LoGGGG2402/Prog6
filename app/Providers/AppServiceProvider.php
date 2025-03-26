@@ -44,6 +44,12 @@ class AppServiceProvider extends ServiceProvider
         // Register custom file validation rule
         Validator::extend('secure_file', function ($attribute, $value, $parameters, $validator) {
             try {
+                // First check if filename is valid
+                $filename = $value->getClientOriginalName();
+                if (!FileValidator::isValidFilename($filename)) {
+                    return false;
+                }
+                
                 return FileValidator::validate($value, $parameters);
             } catch (\Exception $e) {
                 return false;

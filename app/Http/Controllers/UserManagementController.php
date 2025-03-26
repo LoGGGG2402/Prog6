@@ -32,20 +32,32 @@ class UserManagementController extends Controller
         }
         
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|regex:/^[a-zA-Z0-9\s._-]+$/',
             'fullname' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:users',
-            'email' => 'required|string|email|max:255|unique:users',
-            'phone' => 'required|string|max:20',
+            'username' => [
+                'required',
+                'string',
+                'max:255',
+                'regex:/^[a-zA-Z0-9_.-]+$/', // Alphanumeric, underscore, dot, hyphen only
+                Rule::unique('users'),
+            ],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users'),
+            ],
+            'phone' => 'required|string|max:20|regex:/^[0-9+\-\s()]+$/',
             'password' => 'required|string|min:8|confirmed',
         ]);
         
         $user = User::create([
-            'name' => $validated['name'],
-            'fullname' => $validated['fullname'],
-            'username' => $validated['username'],
-            'email' => $validated['email'],
-            'phone' => $validated['phone'],
+            'name' => strip_tags($validated['name']),
+            'fullname' => strip_tags($validated['fullname']),
+            'username' => strip_tags($validated['username']),
+            'email' => filter_var($validated['email'], FILTER_SANITIZE_EMAIL),
+            'phone' => strip_tags($validated['phone']),
             'password' => Hash::make($validated['password']),
             'role' => 'teacher',
         ]);
@@ -75,20 +87,32 @@ class UserManagementController extends Controller
         }
         
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|regex:/^[a-zA-Z0-9\s._-]+$/',
             'fullname' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:users',
-            'email' => 'required|string|email|max:255|unique:users',
-            'phone' => 'required|string|max:20',
+            'username' => [
+                'required',
+                'string',
+                'max:255',
+                'regex:/^[a-zA-Z0-9_.-]+$/', // Alphanumeric, underscore, dot, hyphen only
+                Rule::unique('users'),
+            ],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users'),
+            ],
+            'phone' => 'required|string|max:20|regex:/^[0-9+\-\s()]+$/',
             'password' => 'required|string|min:8|confirmed',
         ]);
         
         $user = User::create([
-            'name' => $validated['name'],
-            'fullname' => $validated['fullname'],
-            'username' => $validated['username'],
-            'email' => $validated['email'],
-            'phone' => $validated['phone'],
+            'name' => strip_tags($validated['name']),
+            'fullname' => strip_tags($validated['fullname']),
+            'username' => strip_tags($validated['username']),
+            'email' => filter_var($validated['email'], FILTER_SANITIZE_EMAIL),
+            'phone' => strip_tags($validated['phone']),
             'password' => Hash::make($validated['password']),
             'role' => 'student',
         ]);

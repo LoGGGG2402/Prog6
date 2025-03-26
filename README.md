@@ -1,78 +1,143 @@
 # Classroom Management System - Laravel Edition
 
-This is a Laravel-based version of the Classroom Management System, migrated from the original PHP application.
-
 ## Overview
 
-The Classroom Management System is a web application that provides an interactive platform for teachers and students. It enables teachers to create assignments, manage challenges, monitor student submissions, and communicate with students. Students can access assignments, submit their work, solve challenges, and communicate with teachers.
-
-This system has been migrated from a traditional PHP application to Laravel, taking advantage of Laravel's modern features, security practices, and MVC architecture.
+The Classroom Management System is a robust web application built with Laravel that facilitates interaction between teachers and students in an educational environment. It provides a secure platform for assignment management, submission handling, and educational challenges, while enabling effective communication between users.
 
 ## Features
 
-- **User Management**: Authentication, profile management, and role-based access control
-- **Assignments**: Create, list, and download assignments
-- **Submissions**: Submit and manage assignment submissions
-- **Challenges**: Create educational challenges with hints and solutions
-- **Messaging**: Direct messaging between teachers and students
-- **File Management**: Secure file upload and download functionality
+### User Management
+- **Role-Based Access Control**: Separate interfaces and permissions for teachers and students
+- **Authentication**: Secure login and session management
+- **Profile Management**: Users can update their personal information
 
-## Technical Details
+### Assignments
+- **Teacher Features**:
+  - Create assignments with detailed descriptions
+  - Upload assignment files (documents, archives)
+  - Review student submissions
+  - Filter assignments by teacher
+- **Student Features**:
+  - View available assignments
+  - Download assignment files
+  - Submit completed work
+  - Update existing submissions
 
-- Built with Laravel 10.x
-- Uses MySQL database
-- Implements Laravel's authentication system
-- MVC architecture
-- Eloquent ORM for database interactions
-- Blade templating for views
-- Bootstrap 5 for frontend styling
+### Challenges
+- **Teacher Features**:
+  - Create programming challenges with hints
+  - Define expected solutions
+  - Upload challenge files
+- **Student Features**:
+  - View and attempt programming challenges
+  - Submit solutions
+  - Track solved challenges
+
+### Communication
+- Direct messaging between teachers and students
+- System notifications for important events
+
+### File Management
+- Secure file upload and download functionality
+- Support for various document and archive formats
+- File validation and sanitization
+
+## Technical Architecture
+
+### Technology Stack
+- **Backend**: Laravel 12.x
+- **Frontend**: Bootstrap 5, Vue.js components
+- **Database**: MySQL (configurable)
+- **Authentication**: Laravel's built-in authentication system
+- **File Storage**: Laravel's filesystem abstraction
+
+### System Architecture
+- **MVC Pattern**: Follows Laravel's Model-View-Controller architecture
+- **Eloquent ORM**: Database operations through Eloquent models
+- **Blade Templating**: Server-side rendering with Blade templates
+- **Vue Components**: Selected interactive UI elements with Vue.js
+
+## Database Structure
+
+### Core Tables
+- **users**: User accounts with roles (teacher/student)
+- **assignments**: Assignments created by teachers
+- **submissions**: Student submissions for assignments
+- **challenges**: Programming challenges created by teachers
+- **messages**: Direct messages between users
+
+### System Tables
+- **sessions**: User session management
+- **cache**, **cache_locks**: Application cache storage
+- **jobs**, **job_batches**, **failed_jobs**: Background job processing
+
+## Security Features
+
+- **Password Security**: Bcrypt hashing for password storage
+- **CSRF Protection**: Cross-Site Request Forgery prevention on all forms
+- **Input Validation**: Thorough validation of all user inputs
+- **XSS Prevention**: Content sanitization to prevent cross-site scripting
+- **File Security**:
+  - File type validation
+  - File size restrictions
+  - Filename sanitization
+  - Secure storage paths
+- **Authorization**: Role-based access control for all features
 
 ## Installation
 
+### Requirements
+- PHP 8.2 or higher
+- Composer
+- MySQL 5.7+ or PostgreSQL 9.6+
+- Node.js and npm (for frontend assets)
+
+### Installation Steps
 1. Clone the repository
    ```bash
-   git clone https://github.com/username/classroom-management.git /var/www/html/classroom
+   git clone https://github.com/LoGGGG2402/Prog6.git 
+   cd Prog6
    ```
 
-2. Install dependencies
+2. Install PHP dependencies
    ```bash
-   cd /var/www/html/classroom
-   composer install
+   composer install --optimize-autoloader --no-dev
    ```
 
-3. Copy the environment file and update the settings
+3. Install JavaScript dependencies
+   ```bash
+   npm install
+   npm run build
+   ```
+
+4. Configure environment variables
    ```bash
    cp .env.example .env
-   ```
-
-4. Generate application key
-   ```bash
    php artisan key:generate
    ```
 
-5. Create a MySQL database and update the .env file with your database credentials
+5. Update the `.env` file with your database credentials
    ```
+   DB_CONNECTION=mysql
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
    DB_DATABASE=classroom_management
    DB_USERNAME=your_username
    DB_PASSWORD=your_password
    ```
 
-6. Run the migrations and seed the database
+6. Run database migrations and seed initial data
    ```bash
    php artisan migrate --seed
    ```
 
-7. Create symbolic link for storage
+7. Create storage symbolic link
    ```bash
    php artisan storage:link
    ```
-
-8. Set proper permissions
-   ```bash
-   chmod -R 755 storage bootstrap/cache
    ```
 
-9. Start the development server
+8. Start the development server
    ```bash
    php artisan serve
    ```
@@ -81,73 +146,14 @@ This system has been migrated from a traditional PHP application to Laravel, tak
 
 ## Default Users
 
-- **Teacher**: Username: `teacher1` Password: `123456a@A`
-- **Student**: Username: `student1` Password: `123456a@A`
+After installation, you can log in with these default credentials:
 
-## Project Structure
+### Teachers
+- Username: `teacher1`, Password: `123456a@A`
+- Username: `teacher2`, Password: `123456a@A`
 
-The application follows Laravel's standard directory structure:
+### Students
+- Username: `student1`, Password: `123456a@A`
+- Username: `student2`, Password: `123456a@A`
 
-- `app/` - Contains the core code of the application
-  - `Http/Controllers/` - Contains the controllers
-  - `Models/` - Contains the Eloquent models
-  - `Providers/` - Contains service providers
-- `config/` - Contains all the application's configuration files
-- `database/` - Contains migrations and seeders
-- `public/` - Contains the entry point and assets
-- `resources/` - Contains views, raw assets, and language files
-- `routes/` - Contains route definitions
-- `storage/` - Contains application storage (uploads, logs, etc.)
-
-## Usage
-
-### Teacher Features
-- Create and manage assignments
-- Create challenges for students
-- View student submissions
-- Communicate with students
-- Manage student profiles
-
-### Student Features
-- View and download assignments
-- Submit completed assignments
-- Attempt to solve challenges
-- Track submission history
-- Communicate with teachers and other students
-
-## Security Features
-
-- Password hashing using Laravel's authentication system
-- CSRF protection for all forms
-- Input validation and sanitization
-- File upload security checks
-- Role-based access control
-- Secure routing and middleware protection
-
-# Programming Assignment System
-
-## Database Structure
-
-This application uses Laravel's standard database tables plus custom tables for the assignment management system.
-
-### Migration Structure
-
-The database migrations are set up as follows:
-
-1. Laravel's default migrations create the standard tables:
-   - `users`
-   - `password_reset_tokens` 
-   - `sessions`
-   - `failed_jobs`
-   - `job_batches`
-   - `cache` and `cache_locks`
-
-2. Our custom migration (`2023_01_01_000000_create_initial_tables.php`):
-   - Adds additional columns to the `users` table (username, fullname, phone, role, avatar)
-   - Creates our custom tables:
-     - `messages`: For communication between teachers and students
-     - `assignments`: For assignments created by teachers
-     - `submissions`: For students' assignment submissions
-     - `challenges`: For programming challenges created by teachers
-
-### Database Diagram
+## Directory Structure

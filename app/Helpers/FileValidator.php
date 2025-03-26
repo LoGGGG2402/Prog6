@@ -56,6 +56,12 @@ class FileValidator
      */
     public static function validate(UploadedFile $file, array $allowedTypes): bool
     {
+        // Validate filename to prevent path traversal and malicious files
+        $filename = $file->getClientOriginalName();
+        if (!self::isValidFilename($filename)) {
+            throw new FileException("Invalid filename detected");
+        }
+
         // First check extension
         $extension = strtolower($file->getClientOriginalExtension());
         $validExtension = false;
@@ -109,6 +115,61 @@ class FileValidator
             }
         }
 
+        return true;
+    }
+
+    /**
+     * Sanitize filename to prevent path traversal and XSS
+     * 
+     * @param string $filename Original filename
+     * @return string Sanitized filename
+     */
+    public static function sanitizeFilename(string $filename): string
+    {
+        // Remove any path components
+        $filename = basename($filename);
+        
+        // Remove special characters that could be used for XSS
+        $filename = preg_replace('/[^\w\.-]/i', '_', $filename);
+        
+        // Limit filename length
+        if (strlen($filename) > 255) {
+            $filename = substr($filename, 0, 255);
+        }
+        
+        return $filename;
+    }
+    
+    /**
+     * Check if filename is valid and secure
+     * 
+     * @param string $filename Filename to validate
+     * @return bool True if filename is valid
+     */
+    public static function isValidFilename(string $filename): bool
+    {
+        // Reject empty filenames
+        if (empty($filename)) {
+            return false;
+        }
+        
+        // Check for path traversal attempts
+        if (strpos($filename, '..') !== false || strpos($filename, '/') !== false || strpos($filename, '\\') !== false) {
+            return false;
+        }
+        
+        // Check length
+        if (strlen($filename) > 255) {
+            return false;
+        }
+        
+        // Block potentially dangerous extensions
+        $dangerousExtensions = ['php', 'phar', 'phtml', 'php3', 'php4', 'php5', 'php7', 'phps', 'cgi', 'exe', 'pl', 'sh', 'asp', 'aspx', 'bat', 'cmd'];
+        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        if (in_array($extension, $dangerousExtensions)) {
+            return false;
+        }
+        
         return true;
     }
 

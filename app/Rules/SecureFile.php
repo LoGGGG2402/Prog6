@@ -31,6 +31,14 @@ class SecureFile implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         try {
+            // First check if filename is valid
+            $filename = $value->getClientOriginalName();
+            if (!FileValidator::isValidFilename($filename)) {
+                $this->errorMessage = "Invalid or potentially unsafe filename.";
+                $fail($this->errorMessage);
+                return;
+            }
+            
             FileValidator::validate($value, $this->allowedTypes);
         } catch (FileException $e) {
             $this->errorMessage = $e->getMessage();

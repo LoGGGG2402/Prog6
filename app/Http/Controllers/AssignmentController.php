@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Assignment;
 use App\Models\User;
 use App\Rules\SecureFile;
+use App\Helpers\FileValidator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Config;
 
 class AssignmentController extends Controller
@@ -83,17 +83,28 @@ class AssignmentController extends Controller
             ],
         ]);
         
+        // Sanitize inputs to prevent XSS
+        $title = strip_tags($validated['title']);
+        $description = $validated['description'] ? strip_tags($validated['description']) : null;
+        
+        // Get original filename and sanitize it
+        $originalName = $request->file('assignment_file')->getClientOriginalName();
+        $fileName = FileValidator::sanitizeFilename($originalName);
+        
         $path = $request->file('assignment_file')->store(
             Config::get('filesystems.uploads.assignments'),
             'private'
         );
         
-        $fileName = $request->file('assignment_file')->getClientOriginalName();
+        // Validate stored path to prevent directory traversal
+        if (!$path || strpos($path, '..') !== false) {
+            return redirect()->back()->with('error', 'Invalid file path detected.');
+        }
         
         Assignment::create([
             'teacher_id' => Auth::id(),
-            'title' => $validated['title'],
-            'description' => $validated['description'],
+            'title' => $title,
+            'description' => $description,
             'file_path' => $path,
             'filename' => $fileName,
         ]);

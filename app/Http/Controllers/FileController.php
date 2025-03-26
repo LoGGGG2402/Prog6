@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Assignment;
 use App\Models\Challenge;
 use App\Models\Submission;
+use App\Helpers\FileValidator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -89,9 +90,17 @@ class FileController extends Controller
             abort(404, 'File not found');
         }
         
+        // Validate file path to prevent directory traversal
+        if (strpos($assignment->file_path, '..') !== false) {
+            abort(400, 'Invalid file path');
+        }
+        
+        // Sanitize filename
+        $filename = FileValidator::sanitizeFilename($assignment->filename);
+        
         return Storage::disk('private')->download(
             $assignment->file_path, 
-            $assignment->filename
+            $filename
         );
     }
 
@@ -111,9 +120,17 @@ class FileController extends Controller
             abort(404, 'File not found');
         }
         
+        // Validate file path to prevent directory traversal
+        if (strpos($submission->file_path, '..') !== false) {
+            abort(400, 'Invalid file path');
+        }
+        
+        // Sanitize filename
+        $filename = FileValidator::sanitizeFilename($submission->filename);
+        
         return Storage::disk('private')->download(
             $submission->file_path, 
-            $submission->filename
+            $filename
         );
     }
 
@@ -136,9 +153,17 @@ class FileController extends Controller
             abort(404, 'File not found');
         }
         
+        // Validate file path to prevent directory traversal
+        if (strpos($challenge->file_path, '..') !== false) {
+            abort(400, 'Invalid file path');
+        }
+        
+        // Sanitize filename
+        $filename = FileValidator::sanitizeFilename(basename($challenge->file_path));
+        
         return Storage::disk('private')->download(
             $challenge->file_path, 
-            basename($challenge->file_path)
+            $filename
         );
     }
 }
